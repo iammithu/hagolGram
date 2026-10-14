@@ -56,7 +56,7 @@ fun AuthScreen() {
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
-        Text("ReelChat", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("hagolGram", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         OutlinedTextField(email, { email = it }, label = { Text("Email") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         if (signup) OutlinedTextField(name, { name = it }, label = { Text("Username") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(pw, { pw = it }, label = { Text("Password") }, singleLine = true,

@@ -1,4 +1,4 @@
-# ReelChat setup
+# hagolGram setup
 
 1. Firebase console -> create project -> add Android app, package `com.reelchat.app`
    -> download `google-services.json` into `app/`.
@@ -23,4 +23,4 @@ NOTE: reels now live at users/{owner}/reels/{id}. If you tested the earlier vers
 1. Put `google-services.json` in `app/`.
 2. Create a PRIVATE GitHub repo, upload/push this whole folder (including the hidden `.github` folder).
 3. Repo -> Actions tab -> "Build APK" runs automatically (or Run workflow).
-4. When green, open the run -> Artifacts -> download `ReelChat-apk` -> unzip -> app-release.apk.
+4. When green, open the run -> Artifacts -> download `hagolGram-apk` -> unzip -> app-release.apk.

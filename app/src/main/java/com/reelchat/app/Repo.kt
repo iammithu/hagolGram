@@ -211,7 +211,7 @@ object Repo {
                     if (s == null) seen = list.map { it.id }.toMutableSet()   // don't buzz for old ones
                     else list.filter { it.id !in s && !it.read }.forEach {
                         s.add(it.id)
-                        if (!USE_CLOUD_FUNCTION) Notifier.show(ReelApp.instance, it.id.hashCode(), "ReelChat", it.body)
+                        if (!USE_CLOUD_FUNCTION) Notifier.show(ReelApp.instance, it.id.hashCode(), "hagolGram", it.body)
                     }
                 }
         }

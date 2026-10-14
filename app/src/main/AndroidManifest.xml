@@ -5,7 +5,7 @@
     <application
         android:name=".ReelApp"
         android:allowBackup="true"
-        android:label="ReelChat"
+        android:label="hagolGram"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
             android:name=".MainActivity"
