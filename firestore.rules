@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function follows(a, b) { return exists(/databases/$(database)/documents/follows/$(a + '_' + b)); }
+    function mutual(a, b) { return follows(a, b) && follows(b, a); }
+    function isLocked(o) { return get(/databases/$(database)/documents/users/$(o)).data.get('locked', false) == true; }
+    // Public profile: followers can view. Private profile: only mutual followers.
+    function canView(viewer, o) { return viewer == o || (follows(viewer, o) && (!isLocked(o) || follows(o, viewer))); }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+      match /saved/{pid} { allow read, write: if signedIn() && request.auth.uid == uid; }
+
+      match /reels/{rid} {
+        allow read: if signedIn() && canView(request.auth.uid, uid);
+        allow create: if signedIn() && request.auth.uid == uid;
+        allow update: if signedIn() && canView(request.auth.uid, uid)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareCount']);
+        allow delete: if signedIn() && request.auth.uid == uid;
+
+        match /likes/{lid} {
+          allow read: if signedIn() && canView(request.auth.uid, uid);
+          allow write: if signedIn() && request.auth.uid == lid && canView(request.auth.uid, uid);
+        }
+
+        // Comments: public ones = owner + mutual followers. Secret ones = only people in visibleTo.
+        match /comments/{cid} {
+          function canSee() { return request.auth.uid == uid || mutual(request.auth.uid, uid); }
+          allow read: if signedIn() && ((canSee() && resource.data.secret == false)
+                                        || request.auth.uid in resource.data.visibleTo);
+          allow create: if signedIn() && canSee() && request.resource.data.authorId == request.auth.uid
+                        && (request.resource.data.secret == false || request.auth.uid in request.resource.data.visibleTo);
+          allow update: if signedIn() && ((canSee() && resource.data.secret == false)
+                                          || request.auth.uid in resource.data.visibleTo)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+          allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+        }
+      }
+    }
+
+    match /follows/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.follower == request.auth.uid
+                    && id == request.resource.data.follower + '_' + request.resource.data.followee;
+      allow delete: if signedIn() && resource.data.follower == request.auth.uid;
+    }
+
+    match /notifications/{id} {
+      allow create: if signedIn() && request.resource.data.fromId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.toUid == request.auth.uid;
+    }
+
+    match /fcmTokens/{uid} { allow write: if signedIn() && request.auth.uid == uid; }
+  }
+}

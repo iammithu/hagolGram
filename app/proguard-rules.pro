@@ -1,0 +1,3 @@
+-keep class com.reelchat.app.Post { *; }
+-keep class com.reelchat.app.Comment { *; }
+-keep class com.reelchat.app.UserProfile { *; }
