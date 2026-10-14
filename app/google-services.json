@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "396174893316",
+    "project_id": "hagolgram",
+    "storage_bucket": "hagolgram.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396174893316:android:4b24ac84e74ac9bc6f7051",
+        "android_client_info": {
+          "package_name": "com.reelchat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA6fY8xbCMGRqvYj5EgfB8FmF0EVZTpqs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
