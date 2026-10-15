@@ -22,3 +22,14 @@ data class Notif(
     val type: String = "", val ownerId: String = "", val postId: String = "",
     val body: String = "", val createdAt: Long = 0, val read: Boolean = false
 )
+
+// Direct messages. Chat id = the two uids sorted and joined with "_".
+data class Chat(
+    val id: String = "", val members: List<String> = emptyList(), val lastText: String = "",
+    val lastAt: Long = 0, val lastFrom: String = "", val seen: Map<String, Long> = emptyMap()
+)
+
+data class Msg(
+    val id: String = "", val from: String = "", val text: String = "", val createdAt: Long = 0,
+    val reelOwner: String = "", val reelId: String = "", val reelCaption: String = "", val reelOwnerName: String = ""
+)

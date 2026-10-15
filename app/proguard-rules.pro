@@ -1,3 +1,6 @@
 -keep class com.reelchat.app.Post { *; }
 -keep class com.reelchat.app.Comment { *; }
 -keep class com.reelchat.app.UserProfile { *; }
+-keep class com.reelchat.app.Notif { *; }
+-keep class com.reelchat.app.Chat { *; }
+-keep class com.reelchat.app.Msg { *; }

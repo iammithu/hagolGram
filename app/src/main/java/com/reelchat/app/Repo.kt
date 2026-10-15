@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,8 @@ object Repo {
 
     val me = MutableStateFlow<UserProfile?>(null)
     val notifs = MutableStateFlow<List<Notif>>(emptyList())
+    val chats = MutableStateFlow<List<Chat>>(emptyList())
+    private var chatJob: Job? = null
     val uid: String get() = auth.currentUser?.uid ?: ""
 
     private var watchJob: Job? = null
@@ -37,11 +40,12 @@ object Repo {
     init {
         auth.addAuthStateListener { a ->
             val u = a.currentUser
-            if (u == null) { me.value = null; notifs.value = emptyList(); watchJob?.cancel() }
+            if (u == null) { me.value = null; notifs.value = emptyList(); chats.value = emptyList(); watchJob?.cancel(); chatJob?.cancel() }
             else scope.launch {
                 runCatching { db.collection("users").document(u.uid).get().await() }
                     .getOrNull()?.toObject(UserProfile::class.java)?.let { me.value = it }
                 startNotifWatcher(u.uid)
+                startChatWatcher(u.uid)
                 runCatching {
                     val t = FirebaseMessaging.getInstance().token.await()
                     db.collection("fcmTokens").document(u.uid).set(mapOf("token" to t)).await()
@@ -78,12 +82,12 @@ object Repo {
     fun users(): Flow<List<UserProfile>> =
         db.collection("users").watch(emptyList<UserProfile>()) { it.toObjects(UserProfile::class.java) }
 
-    fun following(): Flow<Set<String>> =
-        db.collection("follows").whereEqualTo("follower", uid)
+    fun following(of: String = uid): Flow<Set<String>> =
+        db.collection("follows").whereEqualTo("follower", of)
             .watch(emptySet<String>()) { s -> s.documents.mapNotNull { it.getString("followee") }.toSet() }
 
-    fun followers(): Flow<Set<String>> =
-        db.collection("follows").whereEqualTo("followee", uid)
+    fun followers(of: String = uid): Flow<Set<String>> =
+        db.collection("follows").whereEqualTo("followee", of)
             .watch(emptySet<String>()) { s -> s.documents.mapNotNull { it.getString("follower") }.toSet() }
 
     suspend fun toggleFollow(target: String, isFollowing: Boolean) {
@@ -185,6 +189,44 @@ object Repo {
         reel(p.ownerId, p.id).collection("comments").document(c.id)
             .update("reactions.$uid", emoji ?: FieldValue.delete()).await()
         if (emoji != null) notify(c.authorId, "react", p, "@${name()} reacted $emoji to your comment")
+    }
+
+    // ---- direct messages ----
+    fun chatId(a: String, b: String) = listOf(a, b).sorted().joinToString("_")
+
+    private fun startChatWatcher(u: String) {
+        chatJob?.cancel()
+        chatJob = scope.launch {
+            db.collection("chats").whereArrayContains("members", u)
+                .watch(emptyList<Chat>()) { s -> s.documents.mapNotNull { d -> d.toObject(Chat::class.java)?.copy(id = d.id) } }
+                .collect { chats.value = it }
+        }
+    }
+
+    fun messages(other: String): Flow<List<Msg>> =
+        db.collection("chats").document(chatId(uid, other)).collection("messages")
+            .watch(emptyList<Msg>()) { s ->
+                s.documents.mapNotNull { d -> d.toObject(Msg::class.java)?.copy(id = d.id) }.sortedBy { it.createdAt }
+            }
+
+    suspend fun sendMessage(other: String, text: String, post: Post?) {
+        val now = System.currentTimeMillis()
+        val chatRef = db.collection("chats").document(chatId(uid, other))
+        val preview = if (post != null) "Sent a reel" else text.trim()
+        chatRef.set(
+            mapOf("members" to listOf(uid, other), "lastText" to preview, "lastAt" to now,
+                "lastFrom" to uid, "seen" to mapOf(uid to now)),
+            SetOptions.merge()
+        ).await()
+        val ref = chatRef.collection("messages").document()
+        ref.set(Msg(ref.id, uid, text.trim(), now, post?.ownerId ?: "", post?.id ?: "", post?.caption ?: "", post?.ownerName ?: "")).await()
+        notify(other, "dm", null, "@${name()}: ${preview.take(60)}")
+    }
+
+    suspend fun markChatSeen(other: String) {
+        runCatching {
+            db.collection("chats").document(chatId(uid, other)).update("seen.$uid", System.currentTimeMillis()).await()
+        }
     }
 
     // ---- notifications ----

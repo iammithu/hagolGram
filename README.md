@@ -1,26 +1,25 @@
-# hagolGram setup
+# hagolGram
 
-1. Firebase console -> create project -> add Android app, package `com.reelchat.app`
-   -> download `google-services.json` into `app/`.
-2. Build -> Authentication -> enable **Email/Password**.
-3. Build -> Firestore Database -> create -> Rules tab -> paste `firestore.rules` -> Publish.
-4. Open this folder in Android Studio, sync, Run. Install on both phones, sign up, follow each other.
+Instagram-style reels + DMs for you and a friend. Package id stays `com.reelchat.app` (must match Firebase).
 
-## Privacy model
-- Public profile: anyone who follows you sees your reels.
-- Private profile (toggle on Profile tab): only mutual followers see them.
-- Public comments: you + mutual followers. Secret comments: only the people listed (you, the uploader, + anyone you add).
+## Setup
+1. Firebase: create project, add Android app `com.reelchat.app`, put `google-services.json` in `app/`.
+2. Authentication -> enable Email/Password.
+3. Firestore -> create database (production mode) -> Rules -> paste `firestore.rules` -> Publish
+   (re-publish whenever this file changes, e.g. DMs need the `chats` rules).
+4. Build the APK: push to GitHub (workflow `.github/workflows/build.yml`) -> Actions -> download `hagolGram-apk`.
 
-## Notifications
-- Works out of the box: Alerts tab with unread badge, plus a phone notification while the app process is alive.
-- True background push (app fully closed): needs Firebase Blaze plan.
-  `npm i -g firebase-tools && firebase login && firebase deploy --only functions`
-  then set `USE_CLOUD_FUNCTION = true` in Repo.kt (stops duplicate local notifications).
+## What's inside
+- Reels: full-screen vertical feed, tap = pause, double-tap = like, like/comment/share/save.
+- Share button sends the reel to a mutual friend's DM (or "Share via…").
+- DMs between mutual followers, unread badge.
+- Profiles: followers/following counts, reels grid, saved tab, public/private switch.
+- Comments with replies, any-emoji reactions, and secret comments.
+- Activity tab (notifications).
 
-NOTE: reels now live at users/{owner}/reels/{id}. If you tested the earlier version, delete the old `posts` collection.
+## Playback note
+The reel video is read from Instagram's public embed page and played in our own player (unofficial, can break).
+If that fails the app falls back to the plain Instagram embed.
 
-## Build the APK without Android Studio (GitHub Actions)
-1. Put `google-services.json` in `app/`.
-2. Create a PRIVATE GitHub repo, upload/push this whole folder (including the hidden `.github` folder).
-3. Repo -> Actions tab -> "Build APK" runs automatically (or Run workflow).
-4. When green, open the run -> Artifacts -> download `hagolGram-apk` -> unzip -> app-release.apk.
+## Background push (optional, needs Firebase Blaze)
+`firebase deploy --only functions`, then set `USE_CLOUD_FUNCTION = true` in Repo.kt.
